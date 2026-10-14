@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ESP32 光検知テスト</title>
+</head>
+<body>
+  <button id="scanBtn">Bluetooth機器をスキャンする</button>
+
+  <script>
+    // ★ここを自分のESP32のUUIDに変更する
+    const SERVICE_UUID = '0000ffff-0000-1000-8000-00805f9b34fb';        // 光検知サービスUUID（例）
+    const CHARACTERISTIC_UUID = '0000ff01-0000-1000-8000-00805f9b34fb'; // 光検知キャラクタリスティックUUID（例）
+
+    const scanBtn = document.getElementById('scanBtn');
+
+    scanBtn.addEventListener('click', async () => {
+      try {
+        // 1. ESP32をスキャンして選択・ペアリング
+        const device = await navigator.bluetooth.requestDevice({
+          filters: [
+            // 名前で絞る場合（ESP32側のBluetooth名に合わせる）
+            { namePrefix: 'ESP32' }
+          ],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        // 2. GATT接続
+        const server = await device.gatt.connect();
+
+        // 3. サービスとキャラクタリスティック取得
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        const characteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        // 4. 通知開始（ESP32からの「光検知」シグナルを受け取る）
+        await characteristic.startNotifications();
+
+        characteristic.addEventListener('characteristicvaluechanged', event => {
+          const value = event.target.value;
+
+          // 例：1バイト目が 1 のとき「光検知」とみなす
+          const detected = value.getUint8(0) === 1;
+
+          if (detected) {
+            // 0.5秒バイブレーション
+            if (navigator.vibrate) {
+              navigator.vibrate(2000);
+            }
+          }
+        });
+
+        alert('ESP32に接続しました。光検知でバイブレーションします。');
+
+      } catch (error) {
+        console.error(error);
+        alert('接続に失敗しました: ' + error);
+      }
+    });
+  </script>
+</body>
+</html>
