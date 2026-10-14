@@ -42,9 +42,9 @@
           const detected = value.getUint8(0) === 1;
 
           if (detected) {
-            // 0.5秒バイブレーション
+            // 1秒バイブレーション
             if (navigator.vibrate) {
-              navigator.vibrate(2000);
+              navigator.vibrate(1000);
             }
           }
         });
